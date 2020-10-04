@@ -1,24 +1,10 @@
 name: Regionerator
 main: com.github.jikoo.regionerator.Regionerator
 version: ${project.version}
-api-version: "1.13"
+api-version: "1.15"
 author: Jikoo
 softdepend:
-- Civs
-- Factions
-- Feudal
-- GriefDefender
 - GriefPrevention
-- Kingdoms
-- Landlord
-- Lands
-- PreciousStones
-- Multiverse-Core
-- RedProtect
-- Residence
-- Towny
-- WorldGuard
-- UltimateClaims
 
 commands:
  regionerator:
