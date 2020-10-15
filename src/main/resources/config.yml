@@ -30,7 +30,7 @@ remember-next-cycle-time: true
 
 # Worlds the plugin is able to delete regions in
 worlds:
-  - slimefun
+- slimefun
 
 # Hooks to attempt to check for protections from.
 # If your protection plugin of choice isn't here, ask!
