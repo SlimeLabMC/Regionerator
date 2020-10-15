@@ -1,7 +1,6 @@
 package com.github.jikoo.regionerator.world;
 
 import com.github.jikoo.regionerator.Regionerator;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -15,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class WorldInfo {
 
-	protected final Regionerator plugin;
+	private final Regionerator plugin;
 	private final World world;
 	protected final Map<String, RegionInfo> regions;
 
@@ -42,7 +41,7 @@ public abstract class WorldInfo {
 	 * @return the {@link RegionInfo}
 	 */
 	@NotNull
-	public abstract RegionInfo getRegion(int regionX, int regionZ) throws IOException;
+	public abstract RegionInfo getRegion(int regionX, int regionZ);
 
 	/**
 	 * Gets a {@link Stream<RegionInfo>} requesting every {@link RegionInfo} contained by the WorldInfo.
@@ -50,5 +49,14 @@ public abstract class WorldInfo {
 	 * @return a {@link Stream<RegionInfo>}
 	 */
 	public abstract Stream<RegionInfo> getRegions();
+
+	/**
+	 * Gets the instance of Regionerator loading the WorldInfo.
+	 *
+	 * @return the Regionerator instance
+	 */
+	protected Regionerator getPlugin() {
+		return plugin;
+	}
 
 }

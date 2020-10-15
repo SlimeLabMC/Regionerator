@@ -1,6 +1,10 @@
 package com.github.jikoo.regionerator.world;
 
+import com.github.jikoo.regionerator.Regionerator;
 import com.github.jikoo.regionerator.VisitStatus;
+import com.github.jikoo.regionerator.hooks.Hook;
+import com.github.jikoo.regionerator.util.SupplierCache;
+import com.github.jikoo.regionerator.util.VisitStatusCache;
 import com.google.common.base.Preconditions;
 import org.bukkit.World;
 
@@ -13,6 +17,7 @@ public abstract class ChunkInfo {
 
 	private final RegionInfo regionInfo;
 	private final int localChunkX, localChunkZ;
+	private final SupplierCache<VisitStatus> visitStatusSupplier;
 
 	/**
 	 * Constructs a new ChunkInfo instance.
@@ -27,6 +32,7 @@ public abstract class ChunkInfo {
 		this.regionInfo = regionInfo;
 		this.localChunkX = localChunkX;
 		this.localChunkZ = localChunkZ;
+		this.visitStatusSupplier = new VisitStatusCache(getPlugin(), this);
 	}
 
 	/**
@@ -110,15 +116,29 @@ public abstract class ChunkInfo {
 	 *
 	 * @return the last visit date of the chunk
 	 */
-	public abstract long getLastVisit();
+	public long getLastVisit() {
+		return getPlugin().getFlagger().getChunkFlag(getWorld(), getChunkX(), getChunkZ()).join().getLastVisit();
+	}
 
 	/**
 	 * Gets the {@link VisitStatus} of the chunk.
 	 * <p>
-	 * Note that this method can be particularly heavy, particularly when
-	 * {@link com.github.jikoo.regionerator.hooks.Hook}s must be queried. Caution is advised.
-	 * @return
+	 * N.B. This method caches its value for a short duration based on chunks per deletion attempt
+	 * and recovery time. However, querying {@link Hook Hooks} will always result in a heavier first
+	 * operation. Use with caution.
+	 * @return the VisitStatus
 	 */
-	public abstract VisitStatus getVisitStatus();
+	public VisitStatus getVisitStatus() {
+		return  visitStatusSupplier.get();
+	}
+
+	/**
+	 * Gets the instance of Regionerator loading the ChunkInfo.
+	 *
+	 * @return the Regionerator instance
+	 */
+	private Regionerator getPlugin() {
+		return getRegionInfo().getWorldInfo().getPlugin();
+	}
 
 }

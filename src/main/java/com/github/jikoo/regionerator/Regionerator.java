@@ -3,6 +3,7 @@ package com.github.jikoo.regionerator;
 import com.github.jikoo.regionerator.commands.RegioneratorExecutor;
 import com.github.jikoo.regionerator.hooks.Hook;
 import com.github.jikoo.regionerator.hooks.PluginHook;
+import com.github.jikoo.regionerator.listeners.DebugListener;
 import com.github.jikoo.regionerator.listeners.FlaggingListener;
 import com.github.jikoo.regionerator.listeners.HookListener;
 import com.github.jikoo.regionerator.util.yaml.Config;
@@ -18,6 +19,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.PluginCommand;
@@ -32,7 +34,7 @@ import org.bukkit.scheduler.BukkitTask;
  *
  * @author Jikoo
  */
-@SuppressWarnings({"WeakerAccess", "UnusedReturnValue", "unused"})
+@SuppressWarnings({"WeakerAccess"})
 public class Regionerator extends JavaPlugin {
 
 	private final Map<String, DeletionRunnable> deletionRunnables = new ConcurrentHashMap<>();
@@ -43,6 +45,7 @@ public class Regionerator extends JavaPlugin {
 	private Config config;
 	private MiscData miscData;
 	private BukkitTask flagging;
+	private DebugListener debugListener;
 
 	@Override
 	public void onEnable() {
@@ -67,6 +70,7 @@ public class Regionerator extends JavaPlugin {
 		miscData.checkWorldValidity();
 
 		chunkFlagger = new ChunkFlagger(this);
+		debugListener = new DebugListener(this);
 
 		PluginCommand command = getCommand("regionerator");
 		RegioneratorExecutor executor = new RegioneratorExecutor(this, deletionRunnables);
@@ -132,12 +136,19 @@ public class Regionerator extends JavaPlugin {
 			if (!getConfig().getBoolean("hooks." + hookName, true)) {
 				continue;
 			}
+			Class<?> clazz;
 			try {
-				Class<?> clazz = Class.forName("com.github.jikoo.regionerator.hooks." + hookName + "Hook");
+				clazz = Class.forName("com.github.jikoo.regionerator.hooks." + hookName + "Hook");
 				if (!Hook.class.isAssignableFrom(clazz)) {
 					// What.
 					continue;
 				}
+			} catch (ClassNotFoundException e) {
+				// No hook by the name specified.
+				continue;
+			}
+
+			try {
 				Hook hook = (Hook) clazz.getDeclaredConstructor().newInstance();
 				if (!hook.areDependenciesPresent()) {
 					debug(DebugLevel.LOW, () -> String.format("Dependencies not found for %s hook, skipping.", hookName));
@@ -150,15 +161,11 @@ public class Regionerator extends JavaPlugin {
 					getLogger().warning("Protection hook for " + hookName + " failed usability check! Deletion is paused.");
 					setPaused(true);
 				}
-			} catch (ClassNotFoundException e) {
-				getLogger().severe("No hook found for " + hookName + "! Please request compatibility!");
 			} catch (ReflectiveOperationException e) {
-				getLogger().severe("Unable to enable hook for " + hookName + "! Deletion is paused.");
+				getLogger().log(Level.SEVERE, "Unable to enable hook for " + hookName + "! Deletion is paused.", e);
 				setPaused(true);
-				e.printStackTrace();
 			} catch (NoClassDefFoundError e) {
-				debug(DebugLevel.LOW, () -> String.format("Dependencies not found for %s hook, skipping.", hookName));
-				debug(DebugLevel.MEDIUM, (Runnable) e::printStackTrace);
+				debug(() -> String.format("Dependencies not found for %s hook, skipping.", hookName), e);
 			}
 		}
 
@@ -176,6 +183,10 @@ public class Regionerator extends JavaPlugin {
 					attemptDeletionActivation();
 				}
 			}.runTaskTimer(this, 0L, 1200L);
+		}
+
+		if (debug(DebugLevel.HIGH)) {
+			getServer().getPluginManager().registerEvents(debugListener, this);
 		}
 	}
 
@@ -278,6 +289,10 @@ public class Regionerator extends JavaPlugin {
 		return this.chunkFlagger;
 	}
 
+	DebugListener getDebugListener() {
+		return debugListener;
+	}
+
 	public boolean isPaused() {
 		return this.paused.get();
 	}
@@ -298,7 +313,7 @@ public class Regionerator extends JavaPlugin {
 	}
 
 	public void debug(DebugLevel level, Supplier<String> message) {
-		if (Regionerator.this.debug(level)) {
+		if (debug(level)) {
 			getLogger().info(message.get());
 		}
 	}
@@ -306,6 +321,14 @@ public class Regionerator extends JavaPlugin {
 	public void debug(DebugLevel level, Runnable runnable) {
 		if (debug(level)) {
 			runnable.run();
+		}
+	}
+
+	public void debug(Supplier<String> message, Throwable throwable) {
+		if (debug(DebugLevel.MEDIUM)) {
+			getLogger().log(Level.WARNING, message.get(), throwable);
+		} else if (debug(DebugLevel.LOW)) {
+			getLogger().log(Level.WARNING, message.get());
 		}
 	}
 

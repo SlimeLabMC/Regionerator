@@ -21,7 +21,7 @@ public class GriefPreventionHook extends PluginHook {
 		for(int i=-4; i<5; i++){
 			for(int j=-4; j<5; j++){
 				for (Claim claim : GriefPrevention.instance.dataStore.getClaims(chunkX+i, chunkZ+j)) {
-					if (claim.getGreaterBoundaryCorner().getWorld().equals(world)) {
+					if (world.equals(claim.getGreaterBoundaryCorner().getWorld())) {
 						return true;
 					}
 				}

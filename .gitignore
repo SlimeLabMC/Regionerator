@@ -1,4 +1,5 @@
 /bin/
+<<<<<<< HEAD
 /target/
 /plugins/
 /sonar/
@@ -11,3 +12,12 @@ dependency-reduced-pom.xml
 .project
 *.iml
 .DS_Store
+=======
+/.classpath
+/.project
+/.settings/
+/target/
+/dependency-reduced-pom.xml
+/.idea/
+*.iml
+>>>>>>> upstream/master

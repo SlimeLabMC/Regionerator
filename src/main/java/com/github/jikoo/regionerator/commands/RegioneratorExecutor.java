@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.stream.Stream;
 import org.bukkit.Chunk;
 import org.bukkit.command.Command;
@@ -129,28 +130,28 @@ public class RegioneratorExecutor implements TabExecutor {
 			}
 
 			SimpleDateFormat format = new SimpleDateFormat("HH:mm 'on' d MMM yyyy");
-			RegionInfo regionInfo = null;
+			RegionInfo regionInfo = plugin.getWorldManager().getWorld(player.getWorld()).getRegion(Coords.chunkToRegion(chunk.getX()), Coords.chunkToRegion(chunk.getZ()));
 			try {
-				regionInfo = plugin.getWorldManager().getWorld(player.getWorld()).getRegion(Coords.chunkToRegion(chunk.getX()), Coords.chunkToRegion(chunk.getZ()));
+				regionInfo.read();
 			} catch (IOException e) {
-				player.sendMessage("Caught IOException reading region data from disk. Please check console!");
-				e.printStackTrace();
+				player.sendMessage("Caught IOException reading region data. Please check console!");
+				plugin.getLogger().log(Level.WARNING, "Unable to read region!", e);
 			}
 
 			// Region not yet saved, cannot obtain chunk detail data
-			if (regionInfo == null || !regionInfo.exists()) {
+			if (!regionInfo.exists()) {
 				long visit = plugin.getFlagger().getChunkFlag(chunk.getWorld(), chunk.getX(), chunk.getZ()).join().getLastVisit();
-				if (visit == Config.getFlagDefault()) {
+				if (visit == Config.FLAG_DEFAULT) {
 					player.sendMessage("Chunk has not been visited.");
-				} else if (visit == plugin.config().getFlagGenerated()) {
+				} else if (!plugin.config().isDeleteFreshChunks() && visit == plugin.config().getFlagGenerated()) {
 					player.sendMessage("Chunk has not been visited since generation.");
-				} else if (visit == Config.getFlagEternal()) {
+				} else if (visit == Config.FLAG_ETERNAL) {
 					player.sendMessage("Chunk is eternally flagged.");
 				} else {
 					player.sendMessage("Chunk visited until: " + format.format(new Date(visit)));
 				}
 				visit = plugin.getFlagger().getChunkFlagOnDelete(chunk.getWorld(), chunk.getX(), chunk.getZ()).join().getLastVisit();
-				if (visit != Config.getFlagDefault()) {
+				if (visit != Config.FLAG_DEFAULT) {
 					player.sendMessage("Visited (last delete): " + format.format(new Date(visit)));
 				}
 				player.sendMessage("Region not available from disk! Cannot check details.");
@@ -162,7 +163,7 @@ public class RegioneratorExecutor implements TabExecutor {
 			player.sendMessage("Chunk last modified: " + format.format(new Date(chunkInfo.getLastModified())));
 			player.sendMessage("Chunk VisitStatus: " + chunkInfo.getVisitStatus().name());
 			long visit = plugin.getFlagger().getChunkFlagOnDelete(chunk.getWorld(), chunk.getX(), chunk.getZ()).join().getLastVisit();
-			if (visit != Config.getFlagDefault()) {
+			if (visit != Config.FLAG_DEFAULT) {
 				player.sendMessage("Visited (last delete): " + format.format(new Date(visit)));
 			}
 			if (chunkInfo.isOrphaned()) {
