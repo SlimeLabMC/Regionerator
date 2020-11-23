@@ -10,6 +10,7 @@ import com.github.jikoo.regionerator.listeners.WorldListener;
 import com.github.jikoo.regionerator.util.yaml.Config;
 import com.github.jikoo.regionerator.util.yaml.MiscData;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,7 +30,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Plugin for deleting unused region files gradually.
@@ -46,7 +46,7 @@ public class Regionerator extends JavaPlugin {
 	private ChunkFlagger chunkFlagger;
 	private Config config;
 	private MiscData miscData;
-	private BukkitTask flagging;
+	private FlaggingListener flagger;
 	private DebugListener debugListener;
 
 	@Override
@@ -123,8 +123,8 @@ public class Regionerator extends JavaPlugin {
 	public void reloadFeatures() {
 		// Remove all existing features
 		HandlerList.unregisterAll(this);
-		if (flagging != null) {
-			flagging.cancel();
+		if (flagger != null) {
+			flagger.cancel();
 		}
 		protectionHooks.clear();
 
@@ -151,6 +151,10 @@ public class Regionerator extends JavaPlugin {
 			} catch (ClassNotFoundException e) {
 				// No hook by the name specified.
 				continue;
+			} catch (NoClassDefFoundError e) {
+				// Class exists, but dependencies are not available.
+				debug(() -> String.format("Dependencies not found for %s hook, skipping.", hookName), e);
+				continue;
 			}
 
 			try {
@@ -166,29 +170,26 @@ public class Regionerator extends JavaPlugin {
 					getLogger().warning("Protection hook for " + hookName + " failed usability check! Deletion is paused.");
 					setPaused(true);
 				}
-			} catch (ReflectiveOperationException e) {
-				getLogger().log(Level.SEVERE, "Unable to enable hook for " + hookName + "! Deletion is paused.", e);
-				setPaused(true);
 			} catch (NoClassDefFoundError e) {
 				debug(() -> String.format("Dependencies not found for %s hook, skipping.", hookName), e);
+			} catch (ReflectiveOperationException e) {
+				if (e instanceof InvocationTargetException && e.getCause() instanceof ClassNotFoundException) {
+					debug(() -> String.format("Dependencies not found for %s hook, skipping.", hookName), e);
+				} else {
+					getLogger().log(Level.SEVERE, "Unable to enable hook for " + hookName + "! Deletion is paused.", e);
+					setPaused(true);
+				}
 			}
 		}
 
 		if (getServer().getWorlds().stream().anyMatch(world -> config.getFlagDuration(world) > 0)) {
 			// Flag duration is set, start flagging
-
-			getServer().getPluginManager().registerEvents(new FlaggingListener(this), this);
-
-			flagging = new FlaggingRunnable(this).runTaskTimer(this, 0, config.getFlaggingInterval());
-		} else {
-			// Flagging runnable is not scheduled, schedule a task to start deletion
-			flagging = new BukkitRunnable() {
-				@Override
-				public void run() {
-					attemptDeletionActivation();
-				}
-			}.runTaskTimer(this, 0L, 1200L);
+			flagger = new FlaggingListener(this);
+			getServer().getPluginManager().registerEvents(flagger, this);
 		}
+
+		// Periodically attempt to start deletion
+		getServer().getScheduler().runTaskTimer(this, this::attemptDeletionActivation, 0L, 1200L);
 
 		if (debug(DebugLevel.HIGH)) {
 			getServer().getPluginManager().registerEvents(debugListener, this);
