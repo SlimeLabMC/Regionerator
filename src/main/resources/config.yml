@@ -28,17 +28,17 @@ deletion:
   # Hours between deletion cycles
   hours-between-cycles: 12
   # Whether or not to remember time for next cycle on plugin load
-  remember-next-cycle-time: false
+  remember-next-cycle-time: true
 
 # Worlds the plugin is able to delete regions in
 worlds:
   # "default" applies to all worlds not specified.
-  default:
+  slimefun:
     # Flags older than x days can be ignored and the region deleted.
     # Set to -1 to disable Regionerator in a world.
     # To disable flagging, set this to 0.
     # days-till-flag-expires must be greater than 0 to be used with delete-new-unvisited-chunks
-    days-till-flag-expires: -1
+    days-till-flag-expires: 1
 
 # Hooks to attempt to check for protections from.
 # If your protection plugin of choice isn't here, ask!
