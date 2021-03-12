@@ -1,9 +1,11 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.jikoo</groupId>
   <artifactId>regionerator</artifactId>
   <name>Regionerator</name>
-  <version>2.2.2</version>
+  <version>2.3.0</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,17 +19,18 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>23.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
       <version>1.16.3-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.github.jikoo</groupId>
+      <artifactId>planarwrappers</artifactId>
+      <scope>compile</scope>
+      <version>2.1.0</version>
+    </dependency>
+    <!-- Plugin hook dependencies -->
     <dependency>
       <groupId>com.sk89q.worldedit</groupId>
       <artifactId>worldedit-bukkit</artifactId>
@@ -97,7 +100,51 @@
         <targetPath>com/github/jikoo/regionerator/hooks</targetPath>
       </resource>
     </resources>
+
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.4</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <relocations>
+            <!-- Relocate Coords utility in case an external dependent hook used it. -->
+            <relocation>
+              <pattern>com.github.jikoo.planarwrappers.util.Coords</pattern>
+              <shadedPattern>com.github.jikoo.regionerator.Coords</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.github.jikoo.planarwrappers</pattern>
+              <shadedPattern>com.github.jikoo.regionerator.planarwrappers</shadedPattern>
+            </relocation>
+          </relocations>
+          <filters>
+            <filter>
+              <artifact>com.github.jikoo:planarwrappers</artifact>
+              <!--
+                ~ Unfortunately, the minimizeJar option actually breaks build.
+                ~ As a (hopefully temporary) workaround, explicitly declare classes used.
+                ~ Ideally in the future this can be changed to an include of
+                ~ com/github/jikoo/planarwrappers/** with minimizeJar set true.
+                ~ Watch MSHADE-366 for a fix.
+               -->
+              <includes>
+                <include>com/github/jikoo/planarwrappers/util/Coords.class</include>
+                <include>com/github/jikoo/planarwrappers/tuple/Pair.class</include>
+                <include>com/github/jikoo/planarwrappers/function/ThrowingTriFunction.class</include>
+              </includes>
+            </filter>
+          </filters>
+        </configuration>
+      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

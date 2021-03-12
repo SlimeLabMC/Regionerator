@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2015-2021 by Jikoo.
+ *
+ * Regionerator is licensed under a Creative Commons
+ * Attribution-ShareAlike 4.0 International License.
+ *
+ * You should have received a copy of the license along with this
+ * work. If not, see <http://creativecommons.org/licenses/by-sa/4.0/>.
+ */
+
 package com.github.jikoo.regionerator.util.yaml;
 
 import com.github.jikoo.regionerator.DebugLevel;
@@ -35,6 +45,11 @@ public class Config extends ConfigYamlData {
 			millisBetweenCycles = new AtomicLong(), deletionRecovery = new AtomicLong();
 	private final AtomicInteger flaggingRadius = new AtomicInteger(), deletionChunkCount = new AtomicInteger();
 	private final AtomicBoolean rememberCycleDelay = new AtomicBoolean(), deleteFreshChunks = new AtomicBoolean();
+	private long cacheExpirationFrequency;
+	private long cacheRetention;
+	private int cacheBatchMax;
+	private long cacheBatchDelay;
+	private int cacheMaxSize;
 
 	public Config(Plugin plugin) {
 		super(plugin);
@@ -89,13 +104,19 @@ public class Config extends ConfigYamlData {
 		if (secondsPerFlag < 1) {
 			ticksPerFlag.set(10);
 		} else {
-			ticksPerFlag.set(20 * secondsPerFlag);
+			ticksPerFlag.set(20L * secondsPerFlag);
 		}
 
 		deletionRecovery.set(Math.max(0, getLong("deletion.recovery-time")));
 		deletionChunkCount.set(Math.max(1, getInt("deletion.expensive-checks-between-recovery")));
 		millisBetweenCycles.set(TimeUnit.HOURS.toMillis(Math.max(0, getInt("deletion.hours-between-cycles"))));
 		rememberCycleDelay.set(getBoolean("deletion.remember-next-cycle-time"));
+
+		cacheExpirationFrequency = TimeUnit.MILLISECONDS.convert(Math.max(0, getInt("cache.minimum-expiration-frequency")), TimeUnit.SECONDS);
+		cacheRetention = TimeUnit.MILLISECONDS.convert(Math.max(1, getInt("cache.retention")), TimeUnit.MINUTES);
+		cacheBatchMax = Math.max(1, getInt("cache.maximum-batch-size"));
+		cacheBatchDelay = Math.max(0L, getLong("cache.batch-delay"));
+		cacheMaxSize = Math.max(50_000, getInt("cache.max-cache-size"));
 
 	}
 
@@ -203,6 +224,26 @@ public class Config extends ConfigYamlData {
 	@Deprecated
 	public Collection<String> getWorlds() {
 		return ImmutableList.copyOf(enabledWorlds());
+	}
+
+	public long getCacheExpirationFrequency() {
+		return cacheExpirationFrequency;
+	}
+
+	public long getCacheRetention() {
+		return cacheRetention;
+	}
+
+	public int getCacheBatchMax() {
+		return cacheBatchMax;
+	}
+
+	public long getCacheBatchDelay() {
+		return cacheBatchDelay;
+	}
+
+	public int getCacheMaxSize() {
+		return cacheMaxSize;
 	}
 
 }
