@@ -12,9 +12,7 @@ package com.github.jikoo.regionerator.world;
 
 import com.github.jikoo.planarwrappers.util.Coords;
 import com.github.jikoo.regionerator.Regionerator;
-import com.google.common.base.Preconditions;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class RegionInfo {
 
-	private final WorldInfo world;
+	private final @NotNull WorldInfo world;
 	private final int lowestChunkX, lowestChunkZ;
 
 	/**
@@ -60,8 +58,7 @@ public abstract class RegionInfo {
 	 *
 	 * @return the {@link WorldInfo}
 	 */
-	@NotNull
-	public WorldInfo getWorldInfo() {
+	public @NotNull WorldInfo getWorldInfo() {
 		return world;
 	}
 
@@ -70,8 +67,7 @@ public abstract class RegionInfo {
 	 *
 	 * @return the {@link World}
 	 */
-	@NotNull
-	public World getWorld() {
+	public @NotNull World getWorld() {
 		return world.getWorld();
 	}
 
@@ -105,8 +101,7 @@ public abstract class RegionInfo {
 	 *
 	 * @return the identifier
 	 */
-	@NotNull
-	public String getIdentifier() {
+	public @NotNull String getIdentifier() {
 		return Coords.chunkToRegion(getLowestChunkX()) + "_" + Coords.chunkToRegion(getLowestChunkZ());
 	}
 
@@ -117,8 +112,7 @@ public abstract class RegionInfo {
 	 * @param chunkZ the chunk Z coordinate
 	 * @return the {@link ChunkInfo}
 	 */
-	@NotNull
-	public ChunkInfo getChunk(int chunkX, int chunkZ) {
+	public @NotNull ChunkInfo getChunk(int chunkX, int chunkZ) {
 		return getLocalChunk(chunkX - lowestChunkX, chunkZ - lowestChunkZ);
 	}
 
@@ -129,44 +123,37 @@ public abstract class RegionInfo {
 	 * @param localChunkZ the chunk Z coordinate within the region
 	 * @return the {@link ChunkInfo}
 	 */
-	@NotNull
-	public ChunkInfo getLocalChunk(int localChunkX, int localChunkZ) {
-		Preconditions.checkArgument(localChunkX >= 0 && localChunkX < 32 && localChunkZ >= 0 && localChunkZ < 32,
-				"Local chunk coords must be within range 0-31! Received values X: %s, Z: %s", localChunkX, localChunkZ);
+	public @NotNull ChunkInfo getLocalChunk(int localChunkX, int localChunkZ) {
 		return getChunkInternal(localChunkX, localChunkZ);
 	}
 
 	/**
-	 * Implementation of obtaining a ChunkInfo.
+	 * @deprecated implement {@link #getLocalChunk(int, int)}
+	 *
+	 * <p>This method existed as a helper method. However, the helper was required due to implementation-specific details.
 	 *
 	 * @param localChunkX the chunk X coordinate within the region
 	 * @param localChunkZ the chunk Z coordinate within the region
 	 * @return the {@link ChunkInfo} implementation
 	 */
-	@NotNull
-	protected abstract ChunkInfo getChunkInternal(int localChunkX, int localChunkZ);
+	@Deprecated
+	protected @NotNull abstract ChunkInfo getChunkInternal(int localChunkX, int localChunkZ);
 
 	/**
 	 * Gets a {@link Stream<ChunkInfo>} requesting every {@link ChunkInfo} within the region.
 	 *
 	 * @return a {@link Stream<ChunkInfo>}
 	 */
-	public Stream<ChunkInfo> getChunks() {
-		AtomicInteger index = new AtomicInteger();
-		return Stream.generate(() -> {
-			int localIndex = index.getAndIncrement();
-			int localChunkX = localIndex % 32;
-			int localChunkZ = localIndex / 32;
-			return getLocalChunk(localChunkX, localChunkZ);
-		}).limit(1024);
-	}
+	public abstract @NotNull Stream<ChunkInfo> getChunks();
+
+	public abstract int getChunksPerRegion();
 
 	/**
 	 * Gets the instance of Regionerator loading the RegionInfo.
 	 *
 	 * @return the Regionerator instance
 	 */
-	protected Regionerator getPlugin() {
+	protected @NotNull Regionerator getPlugin() {
 		return getWorldInfo().getPlugin();
 	}
 

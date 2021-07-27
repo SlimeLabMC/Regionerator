@@ -15,7 +15,6 @@ import com.github.jikoo.regionerator.VisitStatus;
 import com.github.jikoo.regionerator.hooks.Hook;
 import com.github.jikoo.regionerator.util.SupplierCache;
 import com.github.jikoo.regionerator.util.VisitStatusCache;
-import com.google.common.base.Preconditions;
 import org.bukkit.World;
 
 /**
@@ -35,8 +34,6 @@ public abstract class ChunkInfo {
 	 * @param localChunkZ the chunk Z coordinate within the region
 	 */
 	public ChunkInfo(RegionInfo regionInfo, int localChunkX, int localChunkZ) {
-		Preconditions.checkArgument(localChunkX >= 0 && localChunkX < 32, "localChunkX must be between 0 and 31");
-		Preconditions.checkArgument(localChunkZ >= 0 && localChunkZ < 32, "localChunkZ must be between 0 and 31");
 		this.regionInfo = regionInfo;
 		this.localChunkX = localChunkX;
 		this.localChunkZ = localChunkZ;

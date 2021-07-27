@@ -80,7 +80,7 @@ public class DeletionRunnable extends BukkitRunnable {
 		// Collect potentially eligible chunks
 		List<ChunkInfo> chunks = region.getChunks().filter(this::isDeleteEligible).collect(Collectors.toList());
 
-		if (chunks.size() != 1024) {
+		if (chunks.size() != region.getChunksPerRegion()) {
 			// If entire region is not being deleted, filter out chunks that are already orphaned or freshly generated
 			chunks.removeIf(chunk -> {
 				if (isCancelled()) {
@@ -95,19 +95,20 @@ public class DeletionRunnable extends BukkitRunnable {
 			return;
 		}
 
-		// Orphan chunks. N.B. Changes do not take effect until RegionInfo#write is called.
-		chunks.forEach(ChunkInfo::setOrphaned);
 
-		if (chunks.size() == 0) {
+		if (chunks.isEmpty()) {
 			// If no chunks are modified, do nothing.
 			recover();
 			return;
 		}
 
+		// Orphan chunks. N.B. Changes do not take effect until RegionInfo#write is called.
+		chunks.forEach(ChunkInfo::setOrphaned);
+
 		try {
 			region.write();
 			chunks.forEach(chunk -> plugin.getFlagger().unflagChunk(chunk.getWorld().getName(), chunk.getChunkX(), chunk.getChunkZ()));
-			if (chunks.size() == 1024) {
+			if (chunks.size() == region.getChunksPerRegion()) {
 				regionsDeleted.incrementAndGet();
 			} else {
 				chunksDeleted.addAndGet(chunks.size());
