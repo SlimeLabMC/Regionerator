@@ -112,11 +112,11 @@ public class Config extends ConfigYamlData {
 		millisBetweenCycles.set(TimeUnit.HOURS.toMillis(Math.max(0, getInt("deletion.hours-between-cycles"))));
 		rememberCycleDelay.set(getBoolean("deletion.remember-next-cycle-time"));
 
-		cacheExpirationFrequency = TimeUnit.MILLISECONDS.convert(Math.max(0, getInt("cache.minimum-expiration-frequency")), TimeUnit.SECONDS);
-		cacheRetention = TimeUnit.MILLISECONDS.convert(Math.max(1, getInt("cache.retention")), TimeUnit.MINUTES);
-		cacheBatchMax = Math.max(1, getInt("cache.maximum-batch-size"));
-		cacheBatchDelay = Math.max(0L, getLong("cache.batch-delay"));
-		cacheMaxSize = Math.max(50_000, getInt("cache.max-cache-size"));
+		cacheExpirationFrequency = TimeUnit.MILLISECONDS.convert(20, TimeUnit.SECONDS);
+		cacheRetention = TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
+		cacheBatchMax = 1024;
+		cacheBatchDelay = 500;
+		cacheMaxSize = 80000;
 
 	}
 
